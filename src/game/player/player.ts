@@ -34,7 +34,6 @@ export class Player {
             }
             this.spine.y = this.restFootY - this.lowestFootY();
         };
-
         this.idle();
     }
 
