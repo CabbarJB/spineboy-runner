@@ -6,7 +6,6 @@ import {isColliding} from "../functions/collision.ts";
 import type {GameEvents, GameState} from "./game.types.ts";
 import {loadAssets} from "../game-assets/game-assets.ts";
 import {Background} from "../background/background.ts";
-import {initDevtools} from "@pixi/devtools";
 import {randomBetween} from "../../helpers/helpers.ts";
 
 export enum GameStates {
@@ -24,7 +23,7 @@ export class Game {
     private state: GameState = "menu";
     private events: GameEvents;
     private distance: number = 0;
-    private coins: number = 0;
+    // private coins: number = 0;
 
     private bgLayer = new Container();
     private worldLayer = new Container();
@@ -166,9 +165,9 @@ export class Game {
         this.events.onDistanceChange(Math.floor(this.distance / 5));
     }
 
-    setCoins(coins: number) {
-        this.coins = coins;
-    }
+    // setCoins(coins: number) {
+    //     this.coins = coins;
+    // }
 
     start() {
         if (this.state !== GameStates.menu) return;
@@ -187,7 +186,7 @@ export class Game {
         });
         this.obstacles = [];
         this.distance = -1;
-        this.coins = 0;
+        // this.coins = 0;
         this.spawnTimer = 0;
         this.nextSpawn = 100;
     }
