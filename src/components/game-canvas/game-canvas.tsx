@@ -7,6 +7,8 @@ import type {GameState} from "../../game/game/game.types.ts";
 import ScoreTab from "../score-tab/score-tab.tsx";
 import RotateScreen from "../rotate-screen/rotate-screen.tsx";
 import {needsRotation, useNeedsRotation} from "../../hooks/use-needs-rotation.ts";
+import FullscreenButton from "../fullscreen-button/fullscreen-button.tsx";
+import {fullscreenSupported, useFullscreen} from "../../hooks/use-fullscreen.ts";
 
 export function GameCanvas() {
     const {canvas} = useGameCanvasStyles();
@@ -18,6 +20,7 @@ export function GameCanvas() {
     const [coins, setCoins] = useState(0);
     const [ready, setReady] = useState(false);
     const isPortrait = useNeedsRotation();
+    const {isFullscreen, toggle: toggleFullscreen} = useFullscreen(containerRef);
 
     useEffect(() => {
         gameRef.current?.setBlocked(isPortrait);
@@ -68,5 +71,7 @@ export function GameCanvas() {
         <ScoreTab distance={score} coins={coins}/>
         {visibleScreen}
         {isPortrait && <RotateScreen/>}
+        {fullscreenSupported &&
+            <FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen}/>}
     </div>;
 }
