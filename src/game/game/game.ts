@@ -7,6 +7,7 @@ import type {GameEvents, GameState} from "./game.types.ts";
 import {loadAssets} from "../game-assets/game-assets.ts";
 import {Background} from "../background/background.ts";
 import {randomBetween} from "../../helpers/helpers.ts";
+import {getWorldScale} from "../functions/world-scale.ts";
 
 export enum GameStates {
     menu = "menu",
@@ -33,6 +34,8 @@ export class Game {
     private track!: Track;
     private background!: Background;
     private readonly OBSTACLE_SPEED = 10;
+    // World scale for the current screen size (see world-scale.ts).
+    private scale = 1;
     private obstacles: Obstacle[] = [];
     private spawnTimer = 0;
     private nextSpawn = 100;
@@ -62,7 +65,9 @@ export class Game {
         // })
         container.appendChild(this.app.canvas);
 
-        this.player = new Player(getGroundY(this.app.screen.height))
+        const {width, height} = this.app.screen;
+        this.scale = getWorldScale(width, height);
+        this.player = new Player(getGroundY(height), this.scale)
         this.track = new Track(this.app);
         this.background = new Background(this.app);
 
@@ -136,12 +141,13 @@ export class Game {
     private onResize = (width: number, height: number) => {
         this.background.resize(width, height);
         this.track.resize(width, height);
-        this.player.resize(getGroundY(height));
-        this.obstacles.forEach(obstacle => obstacle.resize(height));
+        this.scale = getWorldScale(width, height);
+        this.player.resize(getGroundY(height), this.scale);
+        this.obstacles.forEach(obstacle => obstacle.resize(height, this.scale));
     };
 
     spawnObstacle() {
-        const obstacle = new Obstacle(this.app.screen);
+        const obstacle = new Obstacle(this.app.screen, this.scale);
         this.app.stage.addChild(obstacle.view);
         this.obstacles.push(obstacle);
     }
@@ -149,9 +155,12 @@ export class Game {
     update(dt: number) {
         if (this.state !== "playing") return;
 
+        // Scaled so obstacles take as long to cross a small screen as a big one.
+        const speed = this.OBSTACLE_SPEED * this.scale;
+
         this.player.update(dt);
-        this.track.update(this.OBSTACLE_SPEED, dt);
-        this.background.update(this.OBSTACLE_SPEED, dt);
+        this.track.update(speed, dt);
+        this.background.update(speed, dt);
 
         if (this.spawnTimer < this.nextSpawn) {
             this.spawnTimer += dt;
@@ -162,7 +171,7 @@ export class Game {
         }
 
         this.obstacles.forEach(obstacle => {
-            obstacle.update(dt, this.OBSTACLE_SPEED)
+            obstacle.update(dt, speed)
             if (obstacle.isOffScreen) {
                 obstacle.view.destroy();
                 this.obstacles.shift();

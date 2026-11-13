@@ -19,12 +19,14 @@ export class Player {
     private onGround = true;
     private jumping = false;
     private restFootY = 0;
+    // World scale (see world-scale.ts); size, position and physics use it.
+    private scale = 1;
 
-    constructor(groundY: number) {
+    constructor(groundY: number, scale: number) {
         this.view.addChild(this.spine);
-        this.view.x = 250;
         this.startingPos = groundY;
         this.view.y = groundY;
+        this.resize(groundY, scale);
         this.spine.state.data.defaultMix = 0.2;
 
         this.spine.afterUpdateWorldTransforms = () => {
@@ -38,17 +40,24 @@ export class Player {
     }
 
     get hitbox(): Hitbox {
+        const s = this.scale;
         return {
-            x: this.view.x - 25,       // centered on his feet
-            y: this.view.y - 120,      // from his feet upward
-            width: 50,
-            height: 120,
+            x: this.view.x - 25 * s,       // centered on his feet
+            y: this.view.y - 120 * s,      // from his feet upward
+            width: 50 * s,
+            height: 120 * s,
         }
     }
 
-    resize(groundY: number) {
-        // Keep the current jump height relative to the new ground.
-        const heightAboveGround = this.view.y - this.startingPos;
+    resize(groundY: number, scale: number) {
+        // Keep a mid-air jump at the same relative height and speed.
+        const ratio = scale / this.scale;
+        const heightAboveGround = (this.view.y - this.startingPos) * ratio;
+        this.vy *= ratio;
+        this.scale = scale;
+
+        this.view.scale.set(scale);
+        this.view.x = 250 * scale;
         this.startingPos = groundY;
         this.view.y = this.startingPos + heightAboveGround;
     }
@@ -60,7 +69,7 @@ export class Player {
     update(dt: number) {
         const nextPos = this.view.y + this.vy * dt;
         if (nextPos <= this.startingPos) {
-            this.vy += GRAVITY * dt;
+            this.vy += GRAVITY * this.scale * dt;
             this.view.y = nextPos;
         } else {
             this.view.y = this.startingPos;
@@ -85,7 +94,8 @@ export class Player {
     jump() {
         if (!this.onGround)
             return;
-        this.vy = JUMP_VELOCITY;
+        // Velocity and gravity scale together: same air time, proportionally lower arc.
+        this.vy = JUMP_VELOCITY * this.scale;
         this.onGround = false;
 
         this.restFootY = this.lowestFootY();

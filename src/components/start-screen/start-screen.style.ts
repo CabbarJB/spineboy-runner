@@ -17,7 +17,8 @@ const styles = {
         // WebkitBackdropFilter: 'blur(8px)',
     },
     start: {
-        fontSize: '90px',
+        // Fits short landscape phones; full size on desktop.
+        fontSize: 'clamp(36px, 10vh, 90px)',
         // Transforms don't apply to plain inline elements.
         display: 'inline-block',
         color: '#ffb000',
@@ -27,7 +28,7 @@ const styles = {
         cursor: 'pointer',
     },
     loadingText: {
-        fontSize: '32px',
+        fontSize: 'clamp(16px, 4vh, 32px)',
         color: '#ffb000',
         textShadow: '4px 4px 0 #c2410c',
         animation: '$blink 1s steps(2, start) infinite',

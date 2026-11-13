@@ -12,7 +12,7 @@ const styles = {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '64px',
+        gap: 'clamp(24px, 7vh, 64px)',
         fontFamily: '"Press Start 2P", system-ui, sans-serif',
         zIndex: 1,
         color: '#fff',
@@ -21,8 +21,8 @@ const styles = {
         // WebkitBackdropFilter: 'blur(8px)',
     },
     title: {
-        // Shrinks on narrow screens so the 9 characters stay on one line.
-        fontSize: 'clamp(32px, 9vw, 90px)',
+        // Shrinks on narrow or short screens so the 9 characters stay on one line.
+        fontSize: 'clamp(32px, min(9vw, 13vh), 90px)',
         display: 'inline-block',
         whiteSpace: 'nowrap',
         color: '#ff5a1f',
@@ -31,7 +31,7 @@ const styles = {
         animation: '$slam 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both',
     },
     retry: {
-        fontSize: 'clamp(16px, 3vw, 32px)',
+        fontSize: 'clamp(16px, min(3vw, 5vh), 32px)',
         display: 'inline-block',
         color: '#ffb000',
         textShadow: '4px 4px 0 #c2410c',
