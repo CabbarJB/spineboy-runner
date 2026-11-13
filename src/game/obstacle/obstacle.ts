@@ -2,12 +2,18 @@ import {type Rectangle} from "pixi.js";
 import type {Hitbox} from "../functions/collision.ts";
 import {Spine} from "@esotericsoftware/spine-pixi-v8";
 import {randomBetween} from "../../helpers/helpers.ts";
+import {getGroundY} from "../track/track.ts";
 export class Obstacle {
     view = Spine.from({ skeleton: "mobData", atlas: "mobAtlas", scale: 0.15 })
     private mobIndex = randomBetween(1,4);
+    // Distance above the track surface, fixed at spawn so resizes don't
+    // make the mob drift as its animated bounds change.
+    private readonly groundOffset: number;
+
     constructor(screen: Rectangle) {
         this.view.x = screen.width;
-        this.view.y = screen.height - this.view.height - 200;
+        this.groundOffset = this.view.height;
+        this.resize(screen.height);
         this.view.skeleton.setSkinByName(this.view.skeleton.data.skins[this.mobIndex].name);
         this.view.skeleton.setSlotsToSetupPose();
         this.view.state.setAnimation(1, "idle", true);
@@ -30,6 +36,10 @@ export class Obstacle {
             width: w,
             height: h,
         };
+    }
+
+    resize(height: number) {
+        this.view.y = getGroundY(height) - this.groundOffset;
     }
 
     update(dt: number, speed: number) {

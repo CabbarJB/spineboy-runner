@@ -1,6 +1,6 @@
 import {Application, Container} from "pixi.js";
 import {Player,} from "../player/player.ts";
-import {Track} from "../track/track.ts";
+import {getGroundY, Track} from "../track/track.ts";
 import {Obstacle} from "../obstacle/obstacle.ts";
 import {isColliding} from "../functions/collision.ts";
 import type {GameEvents, GameState} from "./game.types.ts";
@@ -19,6 +19,8 @@ export class Game {
     private app = new Application();
     private initialized = false;
     private destroyed = false;
+    // True while the device is in portrait and must be rotated first.
+    private blocked = false;
 
     private state: GameState = "menu";
     private events: GameEvents;
@@ -58,10 +60,9 @@ export class Game {
         // initDevtools({app: this.app}).then((r)=>{
         //     console.log(r)
         // })
-        this.initialized = true;
         container.appendChild(this.app.canvas);
 
-        this.player = new Player(this.app.screen.height)
+        this.player = new Player(getGroundY(this.app.screen.height))
         this.track = new Track(this.app);
         this.background = new Background(this.app);
 
@@ -74,13 +75,9 @@ export class Game {
         this.app.stage.eventMode = "static";
         this.app.stage.hitArea = this.app.screen;
 
-        const primaryAction = (e: any) => {
-            console.log(e.code)
+        const changeGameState = ()=> {
+            if (this.blocked || !this.initialized) return;
 
-            if (e.code === "KeyP") {
-                this.app.ticker.started ? this.app.ticker.stop() : this.app.ticker.start();
-                return;
-            }
             switch (this.state) {
                 case GameStates.menu:
                     this.start();
@@ -93,14 +90,55 @@ export class Game {
                     break;
             }
         }
-        this.app.stage.on("pointerdown", primaryAction);
+        const onPointerDown = () => {
+            changeGameState()
+        }
 
-        window.addEventListener('keydown', primaryAction);
+        const onKeyDown = (e: KeyboardEvent) => {
+            console.log(e.code)
+            if (e.code === 'KeyP') {
+                this.app.ticker[this.app.ticker.started ? 'stop' : 'start']()
+                return;
+            }
+            if (e.code === 'Space'){
+                changeGameState()
+            }
+        }
+
+
+        this.app.stage.on("pointerdown", onPointerDown);
+
+        window.addEventListener('keydown', onKeyDown);
+
+        // resizeTo resizes the canvas, but every object positions itself from
+        // the screen size it was created with, so re-lay them out.
+        this.app.renderer.on("resize", this.onResize);
 
         this.app.ticker.add((ticker) => {
             this.update(ticker.deltaTime)
         });
+
+        // Only now are player/track/background built, so input and start() are safe.
+        this.initialized = true;
+        if (this.blocked) this.app.ticker.stop();
+        this.events.onReady();
     }
+
+    // Freeze the game (and ignore input) while the rotate overlay is up.
+    // Can be called before initialize() finishes; it's applied at the end.
+    setBlocked(blocked: boolean) {
+        this.blocked = blocked;
+        if (!this.initialized) return;
+        if (blocked) this.app.ticker.stop();
+        else this.app.ticker.start();
+    }
+
+    private onResize = (width: number, height: number) => {
+        this.background.resize(width, height);
+        this.track.resize(width, height);
+        this.player.resize(getGroundY(height));
+        this.obstacles.forEach(obstacle => obstacle.resize(height));
+    };
 
     spawnObstacle() {
         const obstacle = new Obstacle(this.app.screen);
@@ -170,12 +208,12 @@ export class Game {
     // }
 
     start() {
-        if (this.state !== GameStates.menu) return;
+        if (!this.initialized || this.state !== GameStates.menu) return;
         this.setState(GameStates.playing)
     }
 
     restart() {
-        if (this.state !== GameStates.gameOver) return;
+        if (!this.initialized || this.state !== GameStates.gameOver) return;
         this.resetGame();
         this.setState(GameStates.playing);
     }

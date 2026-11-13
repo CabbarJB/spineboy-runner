@@ -9,20 +9,18 @@ export class Background {
     public view: TilingSprite;
 
     constructor({screen}: Application) {
-        const texture = Texture.from('bgForest');
-
         // The sprite itself covers the screen; the texture repeats inside it.
-        this.view = new TilingSprite({
-            texture,
-            width: screen.width,
-            height: screen.height,
-        });
+        this.view = new TilingSprite({texture: Texture.from('bgForest')});
+        this.view.tilePosition.set(0, -100);
+        this.resize(screen.width, screen.height);
+    }
 
+    resize(width: number, height: number) {
+        this.view.width = width;
+        this.view.height = height;
         // Scale the tile so one copy of the image is exactly screen-high,
         // then it repeats horizontally.
-        const scale = screen.height / texture.height;
-        this.view.tileScale.set(scale);
-        this.view.tilePosition.set(0, -100);
+        this.view.tileScale.set(height / this.view.texture.height);
     }
 
     update(speed: number, dt: number) {

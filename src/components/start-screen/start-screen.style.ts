@@ -26,6 +26,16 @@ const styles = {
         animation: '$heartbeat 3s ease-in-out infinite',
         cursor: 'pointer',
     },
+    loadingText: {
+        fontSize: '32px',
+        color: '#ffb000',
+        textShadow: '4px 4px 0 #c2410c',
+        animation: '$blink 1s steps(2, start) infinite',
+        userSelect: 'none',
+    },
+    '@keyframes blink': {
+        to: {visibility: 'hidden'},
+    },
     // Double "lub-dub" pulse, then a rest. The tilt is repeated in every frame
     // because the animated transform replaces the static one.
     '@keyframes heartbeat': {
