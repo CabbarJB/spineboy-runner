@@ -1,10 +1,12 @@
 import {useStartScreenStyles} from "./start-screen.style.ts";
 
-const StartScreen = ({onStart}: { onStart: () => void }) => {
-    const {wrapper, start} = useStartScreenStyles();
+const StartScreen = ({onStart, loading}: { onStart: () => void, loading: boolean }) => {
+    const {wrapper, start, loadingText} = useStartScreenStyles();
 
     return <div className={wrapper}>
-        <span onClick={onStart} className={start}>START</span>
+        {loading
+            ? <span className={loadingText}>LOADING...</span>
+            : <span onClick={onStart} className={start}>START</span>}
     </div>;
 }
 

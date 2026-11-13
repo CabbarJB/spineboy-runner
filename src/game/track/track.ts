@@ -1,5 +1,21 @@
 import {type Application, FillGradient, Graphics, type Texture, TilingSprite} from "pixi.js";
 
+const TILE_HEIGHT = 200;
+const HEIGHT_RATIO = 0.25;
+const MIN_HEIGHT = 100;
+const MAX_HEIGHT = 200;
+
+// Track takes a share of the screen height, so short (e.g. landscape phone)
+// screens keep most of their space for the action.
+export function getTrackHeight(screenHeight: number) {
+    return Math.round(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, screenHeight * HEIGHT_RATIO)));
+}
+
+// Y of the track surface, where the player and mobs stand.
+export function getGroundY(screenHeight: number) {
+    return screenHeight - getTrackHeight(screenHeight);
+}
+
 export class Track {
     gradient = new FillGradient({
         type: 'linear',
@@ -9,7 +25,7 @@ export class Track {
         ]
     });
     // view = new Graphics().rect(0, 0, 10, 20).fill(this.gradient);
-    private tile = new Graphics().rect(0, 0, 128, 200).fill(this.gradient);
+    private tile = new Graphics().rect(0, 0, 128, TILE_HEIGHT).fill(this.gradient);
     private readonly texture: Texture;
     public view: TilingSprite;
 
@@ -20,14 +36,18 @@ export class Track {
         // this.tile.rect(80, 25, 14, 2).fill(0x777777);
         // this.tile.rect(50, 15, 14, 2).fill(0x777777);
         this.texture = renderer.generateTexture(this.tile);
-        this.view = new TilingSprite({
-            texture: this.texture,
-            width: screen.width,
-            height: 200,
-        });
-        this.view.width = screen.width;
-        this.view.y = screen.height - this.view.height;
+        this.view = new TilingSprite({texture: this.texture});
+        this.resize(screen.width, screen.height);
         this.tile.destroy();
+    }
+
+    resize(width: number, height: number) {
+        const trackHeight = getTrackHeight(height);
+        this.view.width = width;
+        this.view.height = trackHeight;
+        // Squash the gradient tile vertically so it still spans the whole track.
+        this.view.tileScale.y = trackHeight / TILE_HEIGHT;
+        this.view.y = height - trackHeight;
     }
 
     update (speed: number, dt: number) {

@@ -23,8 +23,8 @@ export class Player {
     constructor(groundY: number) {
         this.view.addChild(this.spine);
         this.view.x = 250;
-        this.startingPos = groundY - 200;
-        this.view.y = groundY - 200;
+        this.startingPos = groundY;
+        this.view.y = groundY;
         this.spine.state.data.defaultMix = 0.2;
 
         this.spine.afterUpdateWorldTransforms = () => {
@@ -44,6 +44,13 @@ export class Player {
             width: 50,
             height: 120,
         }
+    }
+
+    resize(groundY: number) {
+        // Keep the current jump height relative to the new ground.
+        const heightAboveGround = this.view.y - this.startingPos;
+        this.startingPos = groundY;
+        this.view.y = this.startingPos + heightAboveGround;
     }
 
     private lowestFootY() {
