@@ -47,7 +47,12 @@ export class Game {
 
     async initialize(container: HTMLElement) {
 
-        await this.app.init({resizeTo: container});
+        await this.app.init({
+            resizeTo: container,
+            resolution: Math.min(window.devicePixelRatio, 2),
+            autoDensity: true,
+            antialias: true,
+        });
         await loadAssets();
         if (this.destroyed) {
             this.app.destroy(true, {children: true});
