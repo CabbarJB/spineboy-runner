@@ -6,15 +6,13 @@ import {isColliding} from "../functions/collision.ts";
 import type {GameEvents, GameState} from "./game.types.ts";
 import {loadAssets} from "../game-assets/game-assets.ts";
 import {Background} from "../background/background.ts";
+import {initDevtools} from "@pixi/devtools";
+import {randomBetween} from "../../helpers/helpers.ts";
 
 export enum GameStates {
     menu = "menu",
     playing = "playing",
     gameOver = "gameOver",
-}
-
-function randomBetween(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 
@@ -40,6 +38,7 @@ export class Game {
 
     constructor(events: GameEvents) {
         this.events = events;
+
     }
 
     async initialize(container: HTMLElement) {
@@ -50,6 +49,16 @@ export class Game {
             this.app.destroy(true, {children: true});
             return;
         }
+
+        if (import.meta.env.DEV) {
+            (globalThis as any).__PIXI_APP__ = this.app;
+            (globalThis as any).__PIXI_DEVTOOLS__ = {app: this.app};
+            (globalThis as any).game = this;
+        }
+
+        // initDevtools({app: this.app}).then((r)=>{
+        //     console.log(r)
+        // })
         this.initialized = true;
         container.appendChild(this.app.canvas);
 
@@ -65,7 +74,14 @@ export class Game {
 
         this.app.stage.eventMode = "static";
         this.app.stage.hitArea = this.app.screen;
-        this.app.stage.on("pointerdown", () => {
+
+        const primaryAction = (e: any) => {
+            console.log(e.code)
+
+            if (e.code === "KeyP") {
+                this.app.ticker.started ? this.app.ticker.stop() : this.app.ticker.start();
+                return;
+            }
             switch (this.state) {
                 case GameStates.menu:
                     this.start();
@@ -77,7 +93,10 @@ export class Game {
                     this.restart();
                     break;
             }
-        });
+        }
+        this.app.stage.on("pointerdown", primaryAction);
+
+        window.addEventListener('keydown', primaryAction);
 
         this.app.ticker.add((ticker) => {
             this.update(ticker.deltaTime)
@@ -94,8 +113,8 @@ export class Game {
         if (this.state !== "playing") return;
 
         this.player.update(dt);
-        this.track.update(this.OBSTACLE_SPEED ,dt);
-        this.background.update(this.OBSTACLE_SPEED ,dt);
+        this.track.update(this.OBSTACLE_SPEED, dt);
+        this.background.update(this.OBSTACLE_SPEED, dt);
 
         if (this.spawnTimer < this.nextSpawn) {
             this.spawnTimer += dt;
@@ -113,7 +132,9 @@ export class Game {
             }
         })
 
-        if (this.obstacles.some(o => isColliding(this.player.hitbox, o.view))) {
+        if (this.obstacles.some(o => isColliding(this.player.hitbox, o.hitbox))) {
+            console.log(this.obstacles[0].view.skeleton.data.animations);
+            this.obstacles[0].view.state.setAnimation(1, "attack", false);
             this.gameOver();
 
             console.log('game over')
@@ -142,7 +163,6 @@ export class Game {
 
     setDistance(dt: number) {
         this.distance += dt
-        console.log(this.distance);
         this.events.onDistanceChange(Math.floor(this.distance / 5));
     }
 
@@ -173,14 +193,20 @@ export class Game {
     }
 
     gameOver() {
-        // this.app.ticker.stop();
-        // this.player.view.tint = 0x888888;
         this.setState(GameStates.gameOver)
     }
 
     destroy() {
         this.destroyed = true;
+        if (import.meta.env.DEV) {
+            const g = globalThis as any;
+            if (g.__PIXI_APP__ === this.app) delete g.__PIXI_APP__;
+            if (g.__PIXI_DEVTOOLS__?.app === this.app) delete g.__PIXI_DEVTOOLS__;
+            if (g.game === this) delete g.game;
+        }
+
         if (this.initialized) this.app.destroy(true, {children: true});
+
     }
 
 
