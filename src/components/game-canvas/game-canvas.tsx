@@ -49,10 +49,7 @@ export function GameCanvas() {
                 return null;
         }
     }, [gameState, onStart]);
-    useEffect(() => {
-        console.log(gameState)
-        console.log(visibleScreen);
-    }, [gameState, visibleScreen]);
+
     return <div ref={containerRef} className={canvas}>
         <ScoreTab distance={score} coins={coins}/>
         {visibleScreen}
