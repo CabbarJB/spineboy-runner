@@ -1,3 +1,4 @@
+import * as PIXI from "pixi.js";
 import {Application, Container} from "pixi.js";
 import {Player,} from "../player/player.ts";
 import {getGroundY, Track} from "../track/track.ts";
@@ -18,6 +19,8 @@ export enum GameStates {
 
 export class Game {
     private app = new Application();
+    // app.init() has resolved (assets may still be loading).
+    private appReady = false;
     private initialized = false;
     private destroyed = false;
     // True while the device is in portrait and must be rotated first.
@@ -53,22 +56,32 @@ export class Game {
             autoDensity: true,
             antialias: true,
         });
-        await loadAssets();
         if (this.destroyed) {
             this.app.destroy(true, {children: true});
             return;
         }
+        this.appReady = true;
 
+        // Register with the devtools and put the canvas in the DOM right after
+        // init, not after asset loading: the extension looks for the app when
+        // the page loads and the highlight overlay measures the canvas element.
         if (import.meta.env.DEV) {
-            (globalThis as any).__PIXI_APP__ = this.app;
-            (globalThis as any).__PIXI_DEVTOOLS__ = {app: this.app};
-            (globalThis as any).game = this;
+            const g = globalThis as any;
+            g.__PIXI_APP__ = this.app;
+            g.__PIXI_STAGE__ = this.app.stage;
+            g.__PIXI_RENDERER__ = this.app.renderer;
+            g.__PIXI_DEVTOOLS__ = {
+                pixi: PIXI,
+                app: this.app,
+                stage: this.app.stage,
+                renderer: this.app.renderer,
+            };
+            g.game = this;
         }
-
-        // initDevtools({app: this.app}).then((r)=>{
-        //     console.log(r)
-        // })
         container.appendChild(this.app.canvas);
+
+        await loadAssets();
+        if (this.destroyed) return; // destroy() already tore the app down
 
         const {width, height} = this.app.screen;
         this.scale = getWorldScale(width, height);
@@ -252,11 +265,15 @@ export class Game {
         if (import.meta.env.DEV) {
             const g = globalThis as any;
             if (g.__PIXI_APP__ === this.app) delete g.__PIXI_APP__;
+            if (g.__PIXI_STAGE__ === this.app.stage) delete g.__PIXI_STAGE__;
+            if (g.__PIXI_RENDERER__ === this.app.renderer) delete g.__PIXI_RENDERER__;
             if (g.__PIXI_DEVTOOLS__?.app === this.app) delete g.__PIXI_DEVTOOLS__;
             if (g.game === this) delete g.game;
         }
 
-        if (this.initialized) this.app.destroy(true, {children: true});
+        // Before app.init() resolves, initialize() sees `destroyed` and tears
+        // the app down itself.
+        if (this.appReady) this.app.destroy(true, {children: true});
 
     }
 
